@@ -4,12 +4,15 @@ export type DeleteNote = (noteId: string) => Promise<void>
 export type FindNote = (noteId: string) => Promise<Note | null>
 export type UpdateNote = (noteId: string, updatedData: Omit<Note, 'id'>) => Promise<Note>
 
-export type JSONData = {
-  list: Array<Note>
-}
+export type JSONData = Record<string, NoteContent>
 
 export type Note = {
   id: string
+  title: string
+  content: string
+}
+
+export type NoteContent = {
   title: string
   content: string
 }
