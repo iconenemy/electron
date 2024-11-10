@@ -25,7 +25,7 @@ class ServerApi {
     try {
       await fs.access(filePath)
     } catch (err) {
-      const jsonData = JSON.stringify({ list: [] }, null, 2)
+      const jsonData = JSON.stringify({}, null, 2)
       fs.writeFile(filePath, jsonData, 'utf-8')
     }
   }
@@ -34,16 +34,15 @@ class ServerApi {
     try {
       const fileData = await this.getJSONFile()
 
-      const newNote: Type.Note = {
-        id: uuidv4(),
+      const noteId = uuidv4()
+      const newNote: Type.NoteContent = {
         title: '',
         content: ''
       }
 
-      fileData.list.unshift(newNote)
-
-      await this.writeDataToJSONFile(fileData)
-      return newNote.id
+      const formatedFileData = { ...fileData, [noteId]: { ...newNote } }
+      await this.writeDataToJSONFile(formatedFileData)
+      return noteId
     } catch (error) {
       console.error('Error updating file:', error)
       return null
@@ -53,7 +52,7 @@ class ServerApi {
   async findAllNotesList(): Promise<Array<Type.Note>> {
     try {
       const fileData = await this.getJSONFile()
-      return fileData.list
+      return Object.entries(fileData).map(([id, { content, title }]) => ({ id, content, title }))
     } catch (error: unknown) {
       if (error instanceof Error)
         console.error('Error reading or parsing JSON file:', error.message)
@@ -64,35 +63,34 @@ class ServerApi {
   async findNote(noteId: string): Promise<Type.Note | null> {
     try {
       const fileData = await this.getJSONFile()
-      const noteCandedate = fileData.list.find(({ id }) => id === noteId)
+      const noteCandedate = fileData[noteId]
       if (!noteCandedate) throw Error('Note does not exist')
 
-      return noteCandedate
+      const { content, title } = noteCandedate
+      return { id: noteId, content: content, title }
     } catch (error: unknown) {
       if (error instanceof Error) console.error('Error finding note by id:', error.message)
       return null
     }
   }
 
-  async updateNote(noteId: string, updatedData: Omit<Type.Note, 'id'>): Promise<Type.Note> {
+  async updateNote(noteId: string, updatedData: Type.Note): Promise<Type.Note> {
     const fileData = await this.getJSONFile()
 
-    const newNotesList = fileData.list.map((note) =>
-      note.id === noteId
-        ? { ...note, title: updatedData.title, content: updatedData.content }
-        : note
-    )
-   
-    await this.writeDataToJSONFile({ list: newNotesList })
-    
+    const newNotesList = {
+      ...fileData,
+      [noteId]: { title: updatedData.title, content: updatedData.content }
+    }
+
+    await this.writeDataToJSONFile(newNotesList)
+
     return { id: noteId, title: updatedData.title, content: updatedData.content }
   }
 
   async deleteNote(noteId: string): Promise<void> {
     const fileData = await this.getJSONFile()
-
-    const newNotesList = fileData.list.filter(({ id }) => id !== noteId)
-    await this.writeDataToJSONFile({ list: newNotesList })
+    delete fileData[noteId]
+    await this.writeDataToJSONFile(fileData)
   }
 
   private getFilePath(): string {
