@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import * as path from 'node:path'
 import { v4 as uuidv4 } from 'uuid'
+import * as CryptoJS from 'crypto-js'
 import * as fs from 'node:fs/promises'
 
 import { Type } from '@shared'
@@ -8,6 +9,7 @@ import { Type } from '@shared'
 class ServerApi {
   static #instance: ServerApi
   private readonly fileData = 'data.json'
+  private readonly secretKey = 'supersecretkey'
 
   private constructor() {}
 
@@ -26,7 +28,8 @@ class ServerApi {
       await fs.access(filePath)
     } catch (err) {
       const jsonData = JSON.stringify({}, null, 2)
-      fs.writeFile(filePath, jsonData, 'utf-8')
+      const encryptedData = this.encryptData(jsonData)
+      fs.writeFile(filePath, encryptedData, 'utf-8')
     }
   }
 
@@ -100,12 +103,24 @@ class ServerApi {
 
   private async getJSONFile(): Promise<Type.JSONData> {
     const data = await fs.readFile(this.getFilePath(), 'utf8')
-    return JSON.parse(data)
+    const decryptedData = this.decryptData(data)
+    return JSON.parse(decryptedData)
   }
 
   private async writeDataToJSONFile(fileData: Type.JSONData): Promise<void> {
     const filePath = this.getFilePath()
-    await fs.writeFile(filePath, JSON.stringify(fileData, null, 2), 'utf-8')
+    const jsonData = JSON.stringify(fileData, null, 2)
+    const encryptedData = this.encryptData(jsonData)
+    await fs.writeFile(filePath, encryptedData, 'utf-8')
+  }
+
+  private encryptData(data: string): string {
+    return CryptoJS.AES.encrypt(data, this.secretKey).toString()
+  }
+
+  private decryptData(encryptedData: string): string {
+    const bytes = CryptoJS.AES.decrypt(encryptedData, this.secretKey)
+    return bytes.toString(CryptoJS.enc.Utf8)
   }
 }
 
