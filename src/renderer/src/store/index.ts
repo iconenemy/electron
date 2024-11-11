@@ -11,7 +11,7 @@ interface StoreState {
   findAllNotesList: () => Promise<void>
   setActiveNote: (note: Type.Note) => void
   deleteNote: (id: string) => Promise<void>
-  updateNote: (id: string, updatedData: Omit<Type.Note, 'id'>) => Promise<void>
+  updateNote: (id: string, updatedData: Type.NoteContent) => Promise<void>
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -30,7 +30,7 @@ const useStore = create<StoreState>((set, get) => ({
       set({ error: 'Error creating note', isLoading: false })
     }
   },
-  updateNote: async (id: string, updatedData: Omit<Type.Note, 'id'>) => {
+  updateNote: async (id: string, updatedData: Type.NoteContent) => {
     set({ isLoading: true, error: null })
     try {
       const updatedNote = await window['context'].updateNote(id, updatedData)

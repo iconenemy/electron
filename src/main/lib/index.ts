@@ -77,7 +77,7 @@ class ServerApi {
     }
   }
 
-  async updateNote(noteId: string, updatedData: Type.Note): Promise<Type.Note> {
+  async updateNote(noteId: string, updatedData: Type.NoteContent): Promise<Type.Note> {
     const fileData = await this.getJSONFile()
 
     const newNotesList = {
